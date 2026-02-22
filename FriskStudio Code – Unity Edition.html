@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>FriskStudio Code – Unity Edition</title>
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #1e1e1e; /* Unity Editor の背景色 */
+    color: #dcdcdc;
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+
+  /* ============================
+        Unity Editor 風ヘッダー
+     ============================ */
+  .header {
+    height: 42px;
+    background: #2b2b2b;
+    border-bottom: 1px solid #3c3c3c;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #e5e5e5;
+  }
+
+  /* ============================
+        言語カード（Unity 専用）
+     ============================ */
+  #language-screen {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+
+  .lang-card {
+    padding: 14px;
+    border-radius: 6px;
+    background: #2d2d2d;
+    border: 1px solid #3c3c3c;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .lang-card:hover {
+    background: #3a3a3a;
+    border-color: #4ea3ff;
+  }
+  .lang-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  /* ============================
+        エディタ画面
+     ============================ */
+  #editor-screen {
+    height: calc(100vh - 42px);
+    display: none;
+    flex-direction: column;
+  }
+
+  .editor-top {
+    height: 36px;
+    background: #2b2b2b;
+    border-bottom: 1px solid #3c3c3c;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  #editor-area {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  #editor-container {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ============================
+        Shader 用 2 ペイン
+     ============================ */
+  #shader-pane {
+    width: 40%;
+    min-width: 260px;
+    background: #1b1b1b;
+    border-left: 2px solid #4ea3ff;
+    display: none;
+    flex-direction: column;
+  }
+
+  #shader-pane-header {
+    padding: 6px 10px;
+    background: #252525;
+    border-bottom: 1px solid #3c3c3c;
+    font-weight: 600;
+  }
+
+  #shader-pane-body {
+    flex: 1;
+    overflow: auto;
+    padding: 10px;
+    font-size: 12px;
+    color: #cfcfcf;
+  }
+
+  /* ============================
+        Unity Log Console
+     ============================ */
+  #unity-console {
+    height: 140px;
+    background: #1b1b1b;
+    border-top: 1px solid #3c3c3c;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .log-info {
+    color: #b5d6ff;
+  }
+  .log-warning {
+    color: #ffe28a;
+  }
+  .log-error {
+    color: #ff8a8a;
+  }
+
+  /* ============================
+        Unity C# テンプレ選択
+     ============================ */
+  #unity-panel {
+    display: none;
+    padding: 6px 12px;
+    background: #252525;
+    border-bottom: 1px solid #3c3c3c;
+    font-size: 12px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #unity-panel select {
+    background: #2d2d2d;
+    color: #e5e5e5;
+    border-radius: 4px;
+    border: 1px solid #3c3c3c;
+    padding: 3px 6px;
+    font-size: 12px;
+  }
+
+  /* ============================
+        設定ボタン
+     ============================ */
+  .settings-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 55px;
+    height: 55px;
+    background: #4ea3ff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 26px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px #0008;
+    color: #fff;
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================
+        Unity Editor 風ヘッダー
+     ============================ -->
+<div class="header">
+  FriskStudio Code – Unity Edition
+</div>
+
+<!-- ============================
+        Unity 専用 言語選択画面
+     ============================ -->
+<div id="language-screen">
+
+  <!-- C#（Unity Scripts） -->
+  <div class="lang-card" onclick="selectLanguage('unitycs')">
+    <div class="lang-name">Unity C#</div>
+    <div>MonoBehaviour / ScriptableObject / Editor 拡張</div>
+  </div>
+
+  <!-- ShaderLab / HLSL -->
+  <div class="lang-card" onclick="selectLanguage('unityshader')">
+    <div class="lang-name">Unity Shader</div>
+    <div>Surface / URP / HDRP / Compute</div>
+  </div>
+
+  <!-- Scene YAML -->
+  <div class="lang-card" onclick="selectLanguage('unityscene')">
+    <div class="lang-name">Scene YAML</div>
+    <div>Unity Scene ファイル</div>
+  </div>
+
+  <!-- Prefab YAML -->
+  <div class="lang-card" onclick="selectLanguage('unityprefab')">
+    <div class="lang-name">Prefab YAML</div>
+    <div>Prefab データ</div>
+  </div>
+
+  <!-- Animator YAML -->
+  <div class="lang-card" onclick="selectLanguage('unityanimator')">
+    <div class="lang-name">Animator YAML</div>
+    <div>Animator Controller</div>
+  </div>
+
+  <!-- manifest.json -->
+  <div class="lang-card" onclick="selectLanguage('unitymanifest')">
+    <div class="lang-name">manifest.json</div>
+    <div>Unity Package Manager</div>
+  </div>
+
+  <!-- package.json -->
+  <div class="lang-card" onclick="selectLanguage('unitypackage')">
+    <div class="lang-name">package.json</div>
+    <div>Unity Package</div>
+  </div>
+
+</div>
+<!-- ============================
+        Unity Edition – Editor UI
+     ============================ -->
+
+<div id="editor-screen">
+
+  <!-- 上部バー（Unity Editor 風） -->
+  <div class="editor-top">
+    <div id="editor-title">Editor</div>
+    <button class="btn" id="downloadBtn">DL</button>
+  </div>
+
+  <!-- C# テンプレ選択パネル -->
+  <div id="unity-panel">
+    <span>Unity C# テンプレート:</span>
+    <select id="unity-template-select">
+      <option value="mono">MonoBehaviour</option>
+      <option value="scriptable">ScriptableObject</option>
+      <option value="editor">Editor 拡張</option>
+      <option value="inspector">Custom Inspector</option>
+      <option value="runtime">Runtime Script</option>
+      <option value="eventsystem">Event System</option>
+      <option value="ui">UI Script</option>
+    </select>
+  </div>
+
+  <!-- エディタ本体 -->
+  <div id="editor-area">
+
+    <!-- Monaco Editor -->
+    <div id="editor-container"></div>
+
+    <!-- Shader 用 2 ペイン -->
+    <div id="shader-pane">
+      <div id="shader-pane-header">Shader Preview</div>
+      <div id="shader-pane-body">
+        <!-- Shader の解析結果や構造をここに表示 -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Unity Console -->
+  <div id="unity-console"></div>
+
+</div>
+
+<!-- 設定ボタン -->
+<div id="settingsBtn" class="settings-btn">⚙</div>
+
+<!-- 設定モーダル -->
+<div id="settingsModal" class="modal-backdrop">
+  <div class="modal">
+    <h2>設定</h2>
+
+    <div class="modal-section">
+      <strong>テーマ</strong>
+      <div class="switch-row">
+        <label for="themeDark">ダークモード</label>
+        <input type="radio" name="theme" id="themeDark" value="dark" checked>
+      </div>
+      <div class="switch-row">
+        <label for="themeLight">ライトモード</label>
+        <input type="radio" name="theme" id="themeLight" value="light">
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <strong>ファイル保存</strong>
+      <div class="switch-row">
+        <label for="overwriteToggle">読み込んだファイルを上書きする</label>
+        <input type="checkbox" id="overwriteToggle" checked>
+      </div>
+    </div>
+
+    <div style="text-align:right;margin-top:8px;">
+      <button class="btn" onclick="closeSettings()">閉じる</button>
+    </div>
+  </div>
+</div>
+<!-- ============================
+      Unity Edition – Templates
+     ============================ -->
+
+<script>
+/* -----------------------------------
+      Unity C# Templates
+----------------------------------- */
+const unityCSharpTemplates = {
+
+mono:
+`using UnityEngine;
+
+public class MyScript : MonoBehaviour
+{
+    void Start()
+    {
+        Debug.Log("Start");
+    }
+
+    void Update()
+    {
+        Debug.Log("Update");
+    }
+}
+`,
+
+scriptable:
+`using UnityEngine;
+
+[CreateAssetMenu(menuName = "FriskStudio/New ScriptableObject")]
+public class MyData : ScriptableObject
+{
+    public int value;
+}
+`,
+
+editor:
+`using UnityEditor;
+using UnityEngine;
+
+public class MyEditorWindow : EditorWindow
+{
+    [MenuItem("FriskStudio/My Window")]
+    public static void Open()
+    {
+        GetWindow<MyEditorWindow>("My Window");
+    }
+
+    void OnGUI()
+    {
+        GUILayout.Label("Hello from Editor Window");
+    }
+}
+`,
+
+inspector:
+`using UnityEditor;
+using UnityEngine;
+
+[CustomEditor(typeof(MyScript))]
+public class MyScriptInspector : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+        GUILayout.Label("Custom Inspector");
+    }
+}
+`,
+
+runtime:
+`using UnityEngine;
+
+public class RuntimeScript : MonoBehaviour
+{
+    [SerializeField] private float speed = 5f;
+
+    void Update()
+    {
+        transform.Translate(Vector3.forward * speed * Time.deltaTime);
+    }
+}
+`,
+
+eventsystem:
+`using UnityEngine;
+using UnityEngine.Events;
+
+public class EventSystemSample : MonoBehaviour
+{
+    public UnityEvent onTriggered;
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            onTriggered?.Invoke();
+        }
+    }
+}
+`,
+
+ui:
+`using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class UIScript : MonoBehaviour
+{
+    public Button button;
+    public TMP_Text label;
+
+    void Start()
+    {
+        button.onClick.AddListener(() =>
+        {
+            label.text = "Clicked!";
+        });
+    }
+}
+`
+};
+
+/* -----------------------------------
+      Unity Shader Templates
+----------------------------------- */
+const unityShaderTemplates = {
+
+surface:
+`Shader "FriskStudio/SurfaceShader"
+{
+    Properties
+    {
+        _Color ("Color", Color) = (1,1,1,1)
+    }
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        CGPROGRAM
+        #pragma surface surf Standard
+
+        fixed4 _Color;
+
+        struct Input { float4 color : COLOR; };
+
+        void surf (Input IN, inout SurfaceOutputStandard o)
+        {
+            o.Albedo = _Color.rgb;
+        }
+        ENDCG
+    }
+}
+`,
+
+urp:
+`Shader "FriskStudio/URPShader"
+{
+    Properties
+    {
+        _BaseColor ("Base Color", Color) = (1,1,1,1)
+    }
+    SubShader
+    {
+        Tags { "RenderPipeline"="UniversalRenderPipeline" }
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            float4 _BaseColor;
+
+            float4 vert(float4 pos : POSITION) : SV_POSITION
+            {
+                return UnityObjectToClipPos(pos);
+            }
+
+            float4 frag() : SV_Target
+            {
+                return _BaseColor;
+            }
+            ENDHLSL
+        }
+    }
+}
+`,
+
+hdrp:
+`Shader "FriskStudio/HDRPShader"
+{
+    HLSLINCLUDE
+    ENDHLSL
+
+    SubShader
+    {
+        Tags { "RenderPipeline"="HDRenderPipeline" }
+        Pass
+        {
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment Frag
+
+            float4 Frag() : SV_Target
+            {
+                return float4(1,0,1,1);
+            }
+            ENDHLSL
+        }
+    }
+}
+`,
+
+compute:
+`// Compute Shader
+#pragma kernel CSMain
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+}
+`
+};
+
+/* -----------------------------------
+      Unity YAML Templates
+----------------------------------- */
+const unityYAMLTemplates = {
+
+scene:
+`%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1000
+GameObject:
+  m_Name: "New Scene Object"
+  m_Component:
+  - component: {fileID: 2000}
+--- !u!4 &2000
+Transform:
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+`,
+
+prefab:
+`%YAML 1.1
+--- !u!1 &1000
+GameObject:
+  m_Name: "New Prefab"
+  m_Component:
+  - component: {fileID: 2000}
+--- !u!4 &2000
+Transform:
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+`,
+
+animator:
+`%YAML 1.1
+--- !u!91 &1000
+AnimatorController:
+  m_Name: "New Animator"
+  m_AnimatorParameters: []
+  m_AnimatorLayers: []
+`
+};
+
+/* -----------------------------------
+      Unity Package / manifest.json
+----------------------------------- */
+const unityPackageTemplates = {
+
+manifest:
+`{
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.6",
+    "com.unity.inputsystem": "1.7.0"
+  }
+}
+`,
+
+package:
+`{
+  "name": "com.friskstudio.package",
+  "version": "1.0.0",
+  "displayName": "FriskStudio Package",
+  "description": "Unity custom package",
+  "unity": "2021.3",
+  "author": {
+    "name": "FriskStudio"
+  }
+}
+`
+};
+</script>
+<script>
+
+/* -----------------------------------
+      言語選択
+----------------------------------- */
+let currentLang = null;
+let editor = null;
+let currentTheme = "dark";
+
+function selectLanguage(lang) {
+  currentLang = lang;
+
+  document.getElementById("language-screen").style.display = "none";
+  document.getElementById("editor-screen").style.display = "flex";
+
+  document.getElementById("editor-title").textContent = displayName(lang);
+  document.getElementById("downloadBtn").textContent = "DL " + getExtLabel(lang);
+
+  const isCSharp = (lang === "unitycs");
+  const isShader = (lang === "unityshader");
+
+  document.getElementById("unity-panel").style.display = isCSharp ? "flex" : "none";
+  document.getElementById("shader-pane").style.display = isShader ? "flex" : "none";
+
+  initMonacoEditor();
+}
+
+/* -----------------------------------
+      Monaco Editor 初期化
+----------------------------------- */
+window.monacoReady = false;
+window.monacoQueue = [];
+
+require.config({
+  paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.0/min/vs' }
+});
+
+require(['vs/editor/editor.main'], function () {
+  window.monacoReady = true;
+  window.monacoQueue.forEach(fn => fn());
+  window.monacoQueue = [];
+});
+
+function initMonacoEditor() {
+  const run = () => {
+    const langId = mapLanguage(currentLang);
+    const value = getDefaultCode(currentLang);
+
+    if (!editor) {
+      editor = monaco.editor.create(
+        document.getElementById("editor-container"),
+        {
+          value,
+          language: langId,
+          theme: currentTheme === "dark" ? "vs-dark" : "vs",
+          automaticLayout: true
+        }
+      );
+
+      editor.onDidChangeModelContent(() => {
+        if (currentLang === "unityshader") updateShaderPreview();
+      });
+
+    } else {
+      monaco.editor.setModelLanguage(editor.getModel(), langId);
+      editor.setValue(value);
+      monaco.editor.setTheme(currentTheme === "dark" ? "vs-dark" : "vs");
+    }
+
+    if (currentLang === "unityshader") updateShaderPreview();
+  };
+
+  if (window.monacoReady) run();
+  else window.monacoQueue.push(run);
+}
+
+/* -----------------------------------
+      言語マッピング
+----------------------------------- */
+function mapLanguage(lang) {
+  const map = {
+    unitycs: "csharp",
+    unityshader: "hlsl",
+    unityscene: "yaml",
+    unityprefab: "yaml",
+    unityanimator: "yaml",
+    unitymanifest: "json",
+    unitypackage: "json"
+  };
+  return map[lang] || "plaintext";
+}
+
+function displayName(lang) {
+  const map = {
+    unitycs: "Unity C#",
+    unityshader: "Unity Shader",
+    unityscene: "Scene YAML",
+    unityprefab: "Prefab YAML",
+    unityanimator: "Animator YAML",
+    unitymanifest: "manifest.json",
+    unitypackage: "package.json"
+  };
+  return map[lang] || lang;
+}
+
+function getExtLabel(lang) {
+  const map = {
+    unitycs: ".cs",
+    unityshader: ".shader",
+    unityscene: ".unity",
+    unityprefab: ".prefab",
+    unityanimator: ".controller",
+    unitymanifest: ".json",
+    unitypackage: ".json"
+  };
+  return map[lang] || ".txt";
+}
+
+/* -----------------------------------
+      デフォルトコード
+----------------------------------- */
+function getDefaultCode(lang) {
+
+  if (lang === "unitycs") return unityCSharpTemplates.mono;
+  if (lang === "unityshader") return unityShaderTemplates.surface;
+  if (lang === "unityscene") return unityYAMLTemplates.scene;
+  if (lang === "unityprefab") return unityYAMLTemplates.prefab;
+  if (lang === "unityanimator") return unityYAMLTemplates.animator;
+  if (lang === "unitymanifest") return unityPackageTemplates.manifest;
+  if (lang === "unitypackage") return unityPackageTemplates.package;
+
+  return "";
+}
+
+/* -----------------------------------
+      Shader Preview（簡易解析）
+----------------------------------- */
+function updateShaderPreview() {
+  if (!editor) return;
+
+  const code = editor.getValue();
+  const pane = document.getElementById("shader-pane-body");
+
+  pane.innerHTML = "";
+
+  const lines = code.split(/\r?\n/);
+  lines.forEach((line, i) => {
+    const div = document.createElement("div");
+    div.textContent = (i + 1) + ": " + line;
+    pane.appendChild(div);
+  });
+}
+
+/* -----------------------------------
+      Unity C# テンプレ切替
+----------------------------------- */
+document.getElementById("unity-template-select").addEventListener("change", () => {
+  if (!editor) return;
+  if (currentLang !== "unitycs") return;
+
+  const key = document.getElementById("unity-template-select").value;
+  editor.setValue(unityCSharpTemplates[key] || unityCSharpTemplates.mono);
+});
+
+/* -----------------------------------
+      Unity Console
+----------------------------------- */
+function logInfo(msg) {
+  const c = document.getElementById("unity-console");
+  const div = document.createElement("div");
+  div.className = "log-info";
+  div.textContent = "[Info] " + msg;
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+}
+
+function logWarning(msg) {
+  const c = document.getElementById("unity-console");
+  const div = document.createElement("div");
+  div.className = "log-warning";
+  div.textContent = "[Warning] " + msg;
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+}
+
+function logError(msg) {
+  const c = document.getElementById("unity-console");
+  const div = document.createElement("div");
+  div.className = "log-error";
+  div.textContent = "[Error] " + msg;
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+}
+
+/* -----------------------------------
+      設定
+----------------------------------- */
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  document.getElementById("settingsModal").style.display = "flex";
+});
+
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
+document.getElementById("themeDark").addEventListener("change", () => {
+  currentTheme = "dark";
+  if (editor) monaco.editor.setTheme("vs-dark");
+});
+
+document.getElementById("themeLight").addEventListener("change", () => {
+  currentTheme = "light";
+  if (editor) monaco.editor.setTheme("vs");
+});
+
+/* -----------------------------------
+      ダウンロード
+----------------------------------- */
+document.getElementById("downloadBtn").addEventListener("click", () => {
+  if (!editor) return;
+
+  const blob = new Blob([editor.getValue()], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "code" + getExtLabel(currentLang);
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+</script>
+
+</body>
+</html>
